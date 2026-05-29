@@ -1,7 +1,10 @@
 from playwright.sync_api import sync_playwright
+from dotenv import load_dotenv
 from groq import Groq
 import time
 import os
+
+load_dotenv()
 
 URL = "https://www.niatinsider.com/contribute/write"
 
@@ -78,22 +81,28 @@ def generate_content():
     return title, subtitle, body
 
 def submit_article():
+    print("[1/6] Generating content via Groq...")
     title, subtitle, body = generate_content()
+    print(f"[2/6] Content ready - Title: {title[:50]}")
 
     with sync_playwright() as p:
+        profile_dir = os.path.join(os.path.expanduser("~"), ".niat_firefox_profile")
+        print("[3/6] Launching Firefox...")
         context = p.firefox.launch_persistent_context(
-            user_data_dir="/tmp/firefox_profile",
+            user_data_dir=profile_dir,
             headless=False
         )
 
         page = context.new_page()
 
+        print("[4/6] Navigating to write page...")
         page.goto(URL)
 
         page.wait_for_timeout(5000)
 
         # Wait for the select element to be available
-        page.wait_for_selector("select#section-select", timeout=15000)
+        print("[5/6] Waiting for form to load...")
+        page.wait_for_selector("select#section-select", timeout=30000)
 
         # Category dropdown - Career & Wins
         page.select_option(
@@ -120,6 +129,7 @@ def submit_article():
         )
 
         # Submit button
+        print("[6/6] Submitting article...")
         page.click(
             'button:has-text("Submit for Review")'
         )
